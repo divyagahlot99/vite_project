@@ -17,6 +17,8 @@ function App() {
   const [sorting, setSorting] = useState([])
   const [columnFilters, setColumnFilters] = useState([])
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 })
+  const [selectedName, setSelectedName] = useState('')
+  const [selectedRowId, setSelectedRowId] = useState(null)
 
   const EditableCell = ({ row, getValue, accessorKey }) => {
     const [editMode, setEditMode] = useState(false)
@@ -226,74 +228,100 @@ function App() {
   })
 
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-6">Interactive Data Table</h1>
-      <div className="overflow-x-auto border rounded-lg shadow-sm">
-        <table className="w-full border-collapse">
-          <thead>
-            {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id} className="bg-gray-50 border-b-2 border-gray-200">
-                {headerGroup.headers.map(header => (
-                  <th key={header.id} className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 min-w-[100px]">
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map(row => (
-              <tr key={row.id} className="hover:bg-blue-50 border-b border-gray-200">
-                {row.getVisibleCells().map(cell => (
-                  <td key={cell.id} className="border border-gray-300 px-4 py-2 text-gray-800">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="mt-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {['First', 'Previous', 'Next', 'Last'].map(label => (
-            <button
-              key={label}
-              onClick={() => {
-                if (label === 'First') table.setPageIndex(0)
-                else if (label === 'Previous') table.previousPage()
-                else if (label === 'Next') table.nextPage()
-                else if (label === 'Last') table.setPageIndex(table.getPageCount() - 1)
-              }}
-              disabled={label === 'First' || label === 'Previous' ? !table.getCanPreviousPage() : !table.getCanNextPage()}
-              className="px-3 py-1 border rounded disabled:opacity-50"
-            >
-              {label}
-            </button>
-          ))}
+    <>
+      <div className="p-4">
+        <h1 className="text-2xl font-bold mb-6">Interactive Data Table</h1>
+        <div className="border rounded-lg shadow-sm">
+          <table className="border-collapse">
+            <thead>
+              {table.getHeaderGroups().map(headerGroup => (
+                <tr key={headerGroup.id} className="bg-gray-50 border-b-2 border-gray-200">
+                  {headerGroup.headers.map(header => (
+                    <th key={header.id} className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 min-w-[100px]">
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {table.getRowModel().rows.map(row => (
+                <tr key={row.id} className={`table-row border-b border-gray-200 ${selectedRowId === row.id ? 'selected-row' : ''}`} onClick={() => {
+                  setSelectedName(row.original.name)
+                  setSelectedRowId(row.id)
+                }}>
+                  {row.getVisibleCells().map(cell => (
+                    <td key={cell.id} className="border border-gray-300 px-4 py-2 text-gray-800">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        <div className="flex items-center gap-2">
-          <span>Page</span>
-          <strong>{table.getState().pagination.pageIndex + 1} of {table.getPageCount()}</strong>
-          <span>| Go to page:</span>
+      </div>
+      <span className="mt-4 flex items-center justify-center gap-2">
+        <button
+          onClick={() => table.setPageIndex(0)}
+          disabled={!table.getCanPreviousPage()}
+          className="px-3 py-1 border rounded disabled:opacity-50 whitespace-nowrap"
+        >
+          First
+        </button>
+        <button
+          onClick={() => table.previousPage()}
+          disabled={!table.getCanPreviousPage()}
+          className="px-3 py-1 border rounded disabled:opacity-50 whitespace-nowrap"
+        >
+          Previous
+        </button>
+        <span className="flex items-center gap-1 whitespace-nowrap">
           <input
             type="number"
-            defaultValue={table.getState().pagination.pageIndex + 1}
+            value={table.getState().pagination.pageIndex + 1}
             onChange={e => table.setPageIndex(e.target.value ? Number(e.target.value) - 1 : 0)}
-            className="w-16 px-2 py-1 border rounded"
+            className="w-12 px-2 py-1 border rounded"
           />
-        </div>
+          <span>/</span>
+          <span>{table.getPageCount()}</span>
+        </span>
+        <button
+          onClick={() => table.nextPage()}
+          disabled={!table.getCanNextPage()}
+          className="px-3 py-1 border rounded disabled:opacity-50 whitespace-nowrap"
+        >
+          Next
+        </button>
+        <button
+          onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+          disabled={!table.getCanNextPage()}
+          className="px-3 py-1 border rounded disabled:opacity-50 whitespace-nowrap"
+        >
+          Last
+        </button>
         <select
           value={table.getState().pagination.pageSize}
           onChange={e => table.setPageSize(Number(e.target.value))}
-          className="px-3 py-1 border rounded"
+          className="px-3 py-1 border rounded whitespace-nowrap"
         >
           {[10, 20, 30, 40, 50].map(pageSize => (
             <option key={pageSize} value={pageSize}>Show {pageSize}</option>
           ))}
         </select>
+      </span>
+      <div className="items-index">
+        <div></div>
+        <div className="items-index-text">
+          {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-{Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getFilteredRowModel().rows.length)} of {table.getFilteredRowModel().rows.length} items
+        </div>
       </div>
-    </div>
+      {selectedName && (
+        <div className="selected-name-display">
+          <strong>Selected Name:</strong> {selectedName}
+        </div>
+      )}
+    </>
   )
 }
 
